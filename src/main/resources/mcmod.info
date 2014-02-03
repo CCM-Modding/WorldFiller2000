@@ -1,0 +1,16 @@
+[
+{
+  "modid": "WorldFiller2000",
+  "name": "WorldFiller2000",
+  "description": "Fill the world with chunks!",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "https://github.com/CCM-Modding/WorldFiller2000",
+  "updateUrl": "",
+  "authors": ["Dries007"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
