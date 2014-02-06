@@ -23,25 +23,49 @@ package ccm.worldFiller2000;
 
 import ccm.worldFiller2000.cmd.CommandWorldFiller;
 import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.ModMetadata;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.registry.TickRegistry;
 import cpw.mods.fml.relauncher.Side;
+import org.mcstats.Metrics;
+
+import java.io.IOException;
 
 import static ccm.worldFiller2000.util.Constants.MODID;
 
 @Mod(modid = MODID)
 public class WorldFiller2000
 {
+    @Mod.Instance(MODID)
+    public static WorldFiller2000 instance;
+
+    @Mod.Metadata(MODID)
+    private ModMetadata metadata;
+
     @Mod.EventHandler()
     public void event(FMLInitializationEvent event)
     {
         TickRegistry.registerTickHandler(TickHandler.INSTANCE, Side.SERVER);
+        try
+        {
+            Metrics metrics = new Metrics(MODID, getVersion());
+            metrics.start();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Mod.EventHandler()
     public void event(FMLServerStartingEvent event)
     {
         event.registerServerCommand(new CommandWorldFiller());
+    }
+
+    public static String getVersion()
+    {
+        return instance.metadata.version;
     }
 }
