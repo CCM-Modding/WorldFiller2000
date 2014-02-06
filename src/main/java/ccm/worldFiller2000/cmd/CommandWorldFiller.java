@@ -7,9 +7,11 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.util.ChatMessageComponent;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class CommandWorldFiller extends CommandBase
@@ -27,26 +29,72 @@ public class CommandWorldFiller extends CommandBase
     }
 
     @Override
+    public List getCommandAliases()
+    {
+        return Arrays.asList("wf");
+    }
+
+    @Override
     public void processCommand(ICommandSender sender, String[] args)
     {
-        if (args.length == 0 || args[0].equalsIgnoreCase("help"))
+        if (args.length <= 1 || args[0].equalsIgnoreCase("help") || (args[0].equalsIgnoreCase("set") && args.length < 6))
         {
-            sender.sendChatToPlayer(ChatMessageComponent.createFromText("Help text here.")); //TODO help text here
+            helpText(sender);
             return;
         }
-        int dim = parseInt(sender, args[0]);
+        int dim = parseInt(sender, args[1]);
         World world = DimensionManager.getWorld(dim);
         if (world == null)
         {
             throw new WrongUsageException("World " + dim + " isn't loaded or doesn't exists.");
         }
-        if (TickHandler.INSTANCE.map.containsKey(dim))
+        Filler filler = TickHandler.INSTANCE.map.get(dim);
+        if (args[0].equalsIgnoreCase("start"))
         {
-            throw new WrongUsageException("World " + dim + " already has a filler.");
+            if (filler == null) throw new WrongUsageException("World " + dim + " doesn't have a filler set.");
+            if (filler.isEnabled()) throw new WrongUsageException("Filler for " + dim + " already started.");
+            filler.start();
         }
-        Filler filler = new Filler(dim, Shape.ROUND, 0, 0, 50, 1);
-        TickHandler.INSTANCE.map.put(dim, filler);
-        sender.sendChatToPlayer(ChatMessageComponent.createFromText("This filler will need " + filler.getListSize() + " ticks or " + (filler.getListSize()/20) + " seconds."));
+        else if (args[0].equalsIgnoreCase("stop"))
+        {
+            if (filler == null) throw new WrongUsageException("World " + dim + " doesn't have a filler set.");
+            if (!filler.isEnabled()) throw new WrongUsageException("Filler for " + dim + " already stopped.");
+            filler.stop();
+        }
+        else if (args[0].equalsIgnoreCase("set"))
+        {
+            if (filler != null && filler.isEnabled()) throw new WrongUsageException("Filler for world " + dim + " is running. Stop before configuring.");
+            if (filler != null) TickHandler.INSTANCE.map.remove(dim);
+
+            Shape shape = Shape.valueOf(args[2].toUpperCase());
+            int centerX = parseInt(sender, args[3])/16;
+            int centerZ = parseInt(sender, args[4])/16;
+            int radius = parseIntWithMin(sender, args[5], 1);
+
+            new Filler(dim, shape, centerX, centerZ, radius);
+            sender.sendChatToPlayer(ChatMessageComponent.createFromText("Filler made. Don't forget to start it.").setColor(EnumChatFormatting.GOLD));
+        }
+        else if  (args[0].equalsIgnoreCase("speed"))
+        {
+            if (filler == null) throw new WrongUsageException("World " + dim + " doesn't have a filler set.");
+            if (args.length < 3)
+            {
+                sender.sendChatToPlayer(ChatMessageComponent.createFromText("The filler for " + dim + " is doing " + filler.getSpeed() + " chunks/sec."));
+            }
+            else
+            {
+                filler.setSpeed(parseIntWithMin(sender, args[2], 1));
+            }
+        }
+        else helpText(sender);
+    }
+
+    private void helpText(ICommandSender sender)
+    {
+        sender.sendChatToPlayer(ChatMessageComponent.createFromText("-= Command usage =-").setColor(EnumChatFormatting.AQUA));
+        sender.sendChatToPlayer(ChatMessageComponent.createFromText("Start and stop: /wf <start|stop> <dim>").setColor(EnumChatFormatting.AQUA));
+        sender.sendChatToPlayer(ChatMessageComponent.createFromText("Set: /wf <set> <dim> <round|square> <centerX> <centerZ> <rad>").setColor(EnumChatFormatting.AQUA));
+        sender.sendChatToPlayer(ChatMessageComponent.createFromText("Speed: /wf <speed> <dim> [chunks per tick]").setColor(EnumChatFormatting.AQUA));
     }
 
     @Override
@@ -55,8 +103,19 @@ public class CommandWorldFiller extends CommandBase
         switch (args.length)
         {
             case 1:
-                return getListOfStringsMatchingLastWord(args, "help");
+                return getListOfStringsMatchingLastWord(args, "help", "start", "stop", "set", "speed");
+            case 2:
+                return getListOfStringsMatchingLastWord(args, getDimIds());
+            case 3:
+                if (args[0].equalsIgnoreCase("set")) return getListOfStringsMatchingLastWord(args, "round", "square");
         }
         return null;
+    }
+
+    public String[] getDimIds()
+    {
+        String[] out = new String[DimensionManager.getIDs().length];
+        for (int i = 0; i < out.length; i++) out[i] = DimensionManager.getIDs()[i].toString();
+        return out;
     }
 }

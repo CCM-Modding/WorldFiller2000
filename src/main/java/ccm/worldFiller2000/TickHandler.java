@@ -3,6 +3,7 @@ package ccm.worldFiller2000;
 import cpw.mods.fml.common.ITickHandler;
 import cpw.mods.fml.common.TickType;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -18,12 +19,19 @@ public class TickHandler implements ITickHandler
     @Override
     public void tickStart(EnumSet<TickType> type, Object... tickData)
     {
-        World world = (World) tickData[0];
-        int dim = world.provider.dimensionId;
-
-        if (map.containsKey(dim))
+        if (tickData[0] instanceof WorldServer)
         {
-            map.get(dim).tick(world);
+            WorldServer world = (WorldServer) tickData[0];
+            int dim = world.provider.dimensionId;
+
+            if (map.containsKey(dim))
+            {
+                map.get(dim).tick(world);
+            }
+        }
+        else
+        {
+            System.out.println("??? " + tickData[0]);
         }
     }
 
